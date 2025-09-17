@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -41,6 +39,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FFMPEG_PATH=ffmpeg
+      - FFPROBE_PATH=ffprobe
     volumes:
       - ./uploads:/app/uploads
       - ./processed:/app/processed
@@ -65,6 +65,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FFMPEG_PATH=ffmpeg
+      - FFPROBE_PATH=ffprobe
     volumes:
       - ./uploads:/app/uploads
       - ./processed:/app/processed
@@ -84,6 +86,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FFMPEG_PATH=ffmpeg
+      - FFPROBE_PATH=ffprobe
     volumes:
       - ./uploads:/app/uploads
       - ./processed:/app/processed
@@ -92,6 +96,21 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # pgAdmin Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@droplink.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
         condition: service_healthy
 
   # Nginx Reverse Proxy
@@ -109,3 +128,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  pgadmin_data:

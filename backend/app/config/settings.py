@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 import os
 
 
@@ -20,11 +20,11 @@ class Settings(BaseSettings):
     upload_dir: str = "./uploads"
     processed_dir: str = "./processed"
     max_file_size: int = 500 * 1024 * 1024  # 500MB
-    allowed_extensions: list = ["mp4", "avi", "mov", "mkv", "webm"]
+    allowed_extensions: List[str] = ["mp4", "avi", "mov", "mkv", "webm"]
     
     # FFmpeg Settings
-    ffmpeg_path: str = "ffmpeg"
-    ffprobe_path: str = "ffprobe"
+    ffmpeg_path: str = "ffmpeg"  # Use system PATH
+    ffprobe_path: str = "ffprobe"  # Use system PATH
     
     # Celery Settings
     celery_broker_url: str = "redis://localhost:6379/0"
@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     
     # CORS Settings
-    allowed_origins: list = ["*"]
-    allowed_methods: list = ["*"]
-    allowed_headers: list = ["*"]
+    allowed_origins: List[str] = ["*"]
+    allowed_methods: List[str] = ["*"]
+    allowed_headers: List[str] = ["*"]
     
     # Rate Limiting
     rate_limit_requests: int = 100

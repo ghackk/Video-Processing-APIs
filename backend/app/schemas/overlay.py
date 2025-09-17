@@ -8,7 +8,7 @@ import uuid
 class OverlayCreate(BaseModel):
     """Schema for overlay creation"""
     video_id: uuid.UUID
-    overlay_type: str = Field(..., regex="^(text|image|video)$")
+    overlay_type: str = Field(..., pattern="^(text|image|video)$")
     content: Optional[str] = None  # For text overlays
     file_path: Optional[str] = None  # For image/video overlays
     position_x: Optional[int] = Field(None, ge=0)
@@ -20,8 +20,8 @@ class OverlayCreate(BaseModel):
     opacity: Optional[float] = Field(1.0, ge=0.0, le=1.0)
     font_family: Optional[str] = None
     font_size: Optional[int] = Field(None, gt=0)
-    font_color: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
-    language: Optional[str] = None  # For multi-language support
+    font_color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
+    language: Optional[str] = Field("en", description="Language for text rendering (en, hindi, tamil, telugu, bengali, gujarati, marathi, kannada, malayalam, punjabi, odia)")
 
 
 class OverlayResponse(BaseModel):
@@ -51,9 +51,9 @@ class OverlayResponse(BaseModel):
 class WatermarkRequest(BaseModel):
     """Schema for watermark request"""
     video_id: uuid.UUID
-    watermark_type: str = Field(..., regex="^(image|text)$")
+    watermark_type: str = Field(..., pattern="^(image|text)$")
     content: Optional[str] = None  # For text watermarks
     file_path: Optional[str] = None  # For image watermarks
-    position: str = Field("bottom-right", regex="^(top-left|top-right|bottom-left|bottom-right|center)$")
+    position: str = Field("bottom-right", pattern="^(top-left|top-right|bottom-left|bottom-right|center)$")
     opacity: Optional[float] = Field(0.5, ge=0.0, le=1.0)
     size: Optional[int] = Field(100, gt=0, le=500)  # Size in pixels

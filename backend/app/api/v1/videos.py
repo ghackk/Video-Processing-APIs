@@ -5,7 +5,8 @@ import uuid
 from app.config.database import get_db
 from app.services.video_service import VideoService
 from app.services.storage_service import StorageService
-from app.schemas.video import VideoResponse, VideoList, TrimRequest, QualityRequest
+from app.models.video import ProcessedVideo
+from app.schemas.video import VideoResponse, VideoList, TrimRequest, TrimRequestByPath, QualityRequest, QualityRequestByPath, ProcessedVideoResponse
 from app.schemas.job import JobResponse
 from app.tasks.video_tasks import process_video_upload, process_video_trim, process_quality_generation
 
@@ -143,18 +144,23 @@ async def trim_video(
 @router.post("/{video_id}/trim", response_model=JobResponse)
 async def trim_video_by_id(
     video_id: uuid.UUID,
-    request: TrimRequest,
+    request: TrimRequestByPath,
     db: Session = Depends(get_db)
 ):
     """Alternative trim endpoint"""
-    request.video_id = video_id
-    return await trim_video(request, db)
+    # Create a TrimRequest with the video_id from the URL path
+    trim_request = TrimRequest(
+        video_id=video_id,
+        start_time=request.start_time,
+        end_time=request.end_time
+    )
+    return await trim_video(trim_request, db)
 
 
 @router.post("/{video_id}/qualities", response_model=JobResponse)
 async def generate_qualities(
     video_id: uuid.UUID,
-    request: QualityRequest,
+    request: QualityRequestByPath,
     db: Session = Depends(get_db)
 ):
     """Generate multiple quality versions (Level 5)"""
@@ -235,6 +241,69 @@ async def get_thumbnail(
         
         from fastapi.responses import FileResponse
         return FileResponse(video.thumbnail_path, media_type="image/jpeg")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{video_id}/processed", response_model=List[ProcessedVideoResponse])
+async def list_processed_videos(
+    video_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """List all processed versions of a video"""
+    try:
+        processed_videos = db.query(ProcessedVideo).filter(
+            ProcessedVideo.original_video_id == video_id
+        ).all()
+        
+        return processed_videos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/processed/{processed_video_id}/download")
+async def download_processed_video(
+    processed_video_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """Download a processed video by its unique ID"""
+    try:
+        processed_video = db.query(ProcessedVideo).filter(
+            ProcessedVideo.id == processed_video_id
+        ).first()
+        
+        if not processed_video:
+            raise HTTPException(status_code=404, detail="Processed video not found")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            processed_video.file_path,
+            filename=processed_video.filename,
+            media_type="video/mp4"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/processed/{processed_video_id}", response_model=ProcessedVideoResponse)
+async def get_processed_video(
+    processed_video_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """Get processed video details by its unique ID"""
+    try:
+        processed_video = db.query(ProcessedVideo).filter(
+            ProcessedVideo.id == processed_video_id
+        ).first()
+        
+        if not processed_video:
+            raise HTTPException(status_code=404, detail="Processed video not found")
+        
+        return processed_video
     except HTTPException:
         raise
     except Exception as e:

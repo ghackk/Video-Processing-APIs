@@ -99,16 +99,59 @@ class FFmpegService:
             font_path = self._get_font_path(language)
             
             x, y = position
-            cmd = [
-                self.ffmpeg_path,
-                "-i", input_path,
-                "-vf", f"drawtext=text='{text}':fontfile={font_path}:fontsize={font_size}:x={x}:y={y}:fontcolor={font_color}",
-                "-c:a", "copy",
-                "-y",
-                output_path
-            ]
+            
+            # For Hindi and other Unicode languages, use a different approach
+            if language in ["hindi", "tamil", "telugu", "bengali", "gujarati", "marathi", "kannada", "malayalam", "punjabi", "odia"]:
+                try:
+                    # Try subtitle approach first (better Unicode support)
+                    subtitle_file = self._create_subtitle_file(text, font_path, font_size, font_color, x, y)
+                    
+                    cmd = [
+                        self.ffmpeg_path,
+                        "-i", input_path,
+                        "-vf", f"subtitles={subtitle_file}",
+                        "-c:a", "copy",
+                        "-y",
+                        output_path
+                    ]
+                except Exception as e:
+                    # Fallback to drawtext with proper font path escaping
+                    print(f"Subtitle approach failed, using drawtext fallback: {e}")
+                    escaped_text = text.replace("'", "\\'").replace(":", "\\:")
+                    # Escape Windows path separators for FFmpeg
+                    escaped_font_path = font_path.replace("\\", "\\\\").replace(":", "\\:")
+                    
+                    cmd = [
+                        self.ffmpeg_path,
+                        "-i", input_path,
+                        "-vf", f"drawtext=text='{escaped_text}':fontfile='{escaped_font_path}':fontsize={font_size}:x={x}:y={y}:fontcolor={font_color}",
+                        "-c:a", "copy",
+                        "-y",
+                        output_path
+                    ]
+            else:
+                # Standard text overlay for English
+                escaped_text = text.replace("'", "\\'").replace(":", "\\:")
+                cmd = [
+                    self.ffmpeg_path,
+                    "-i", input_path,
+                    "-vf", f"drawtext=text='{escaped_text}':fontfile={font_path}:fontsize={font_size}:x={x}:y={y}:fontcolor={font_color}",
+                    "-c:a", "copy",
+                    "-y",
+                    output_path
+                ]
             
             subprocess.run(cmd, check=True, capture_output=True)
+            
+            # Clean up temporary subtitle file if it was created
+            if language in ["hindi", "tamil", "telugu", "bengali", "gujarati", "marathi", "kannada", "malayalam", "punjabi", "odia"]:
+                import os
+                try:
+                    if 'subtitle_file' in locals() and os.path.exists(subtitle_file):
+                        os.remove(subtitle_file)
+                except:
+                    pass  # Ignore cleanup errors
+            
             return output_path
         except subprocess.CalledProcessError as e:
             raise Exception(f"Text overlay failed: {e.stderr}")
@@ -175,10 +218,10 @@ class FFmpegService:
         results = {}
         
         quality_settings = {
-            "1080p": {"scale": "1920:1080", "bitrate": "5000k", "audio_bitrate": "128k"},
-            "720p": {"scale": "1280:720", "bitrate": "2500k", "audio_bitrate": "128k"},
-            "480p": {"scale": "854:480", "bitrate": "1000k", "audio_bitrate": "96k"},
-            "360p": {"scale": "640:360", "bitrate": "500k", "audio_bitrate": "64k"}
+            "1080p": {"height": "1080", "bitrate": "5000k", "audio_bitrate": "128k"},
+            "720p": {"height": "720", "bitrate": "2500k", "audio_bitrate": "128k"},
+            "480p": {"height": "480", "bitrate": "1000k", "audio_bitrate": "96k"},
+            "360p": {"height": "360", "bitrate": "500k", "audio_bitrate": "64k"}
         }
         
         for quality in qualities:
@@ -192,7 +235,7 @@ class FFmpegService:
                 cmd = [
                     self.ffmpeg_path,
                     "-i", input_path,
-                    "-vf", f"scale={settings['scale']}",
+                    "-vf", f"scale=-2:{settings['height']}",  # -2 preserves aspect ratio
                     "-c:v", "libx264",
                     "-b:v", settings["bitrate"],
                     "-c:a", "aac",
@@ -210,17 +253,82 @@ class FFmpegService:
     
     def _get_font_path(self, language: str) -> str:
         """Get font path for specific language"""
+        # Get the absolute path to the backend directory
+        backend_dir = Path(__file__).parent.parent.parent
+        
         font_map = {
-            "hindi": "assets/fonts/hindi/NotoSansDevanagari-Regular.ttf",
-            "tamil": "assets/fonts/tamil/NotoSansTamil-Regular.ttf",
-            "telugu": "assets/fonts/telugu/NotoSansTelugu-Regular.ttf",
-            "bengali": "assets/fonts/bengali/NotoSansBengali-Regular.ttf",
-            "gujarati": "assets/fonts/gujarati/NotoSansGujarati-Regular.ttf",
-            "marathi": "assets/fonts/marathi/NotoSansDevanagari-Regular.ttf",
-            "kannada": "assets/fonts/kannada/NotoSansKannada-Regular.ttf",
-            "malayalam": "assets/fonts/malayalam/NotoSansMalayalam-Regular.ttf",
-            "punjabi": "assets/fonts/punjabi/NotoSansGurmukhi-Regular.ttf",
-            "odia": "assets/fonts/odia/NotoSansOriya-Regular.ttf"
+            "hindi": backend_dir / "assets/fonts/hindi/NotoSansDevanagari-Regular.ttf",
+            "tamil": backend_dir / "assets/fonts/tamil/NotoSansTamil-Regular.ttf",
+            "telugu": backend_dir / "assets/fonts/telugu/NotoSansTelugu-Regular.ttf",
+            "bengali": backend_dir / "assets/fonts/bengali/NotoSansBengali-Regular.ttf",
+            "gujarati": backend_dir / "assets/fonts/gujarati/NotoSansGujarati-Regular.ttf",
+            "marathi": backend_dir / "assets/fonts/marathi/NotoSansDevanagari-Regular.ttf",
+            "kannada": backend_dir / "assets/fonts/kannada/NotoSansKannada-Regular.ttf",
+            "malayalam": backend_dir / "assets/fonts/malayalam/NotoSansMalayalam-Regular.ttf",
+            "punjabi": backend_dir / "assets/fonts/punjabi/NotoSansGurmukhi-Regular.ttf",
+            "odia": backend_dir / "assets/fonts/odia/NotoSansOriya-Regular.ttf"
         }
         
-        return font_map.get(language, "assets/fonts/default/NotoSans-Regular.ttf")
+        # Get the font path
+        font_path = font_map.get(language, backend_dir / "assets/fonts/default/NotoSans-Regular.ttf")
+        
+        # Check if font file exists, if not, use system default
+        if not font_path.exists():
+            # For Hindi and other Indian languages, try to use system fonts
+            if language == "hindi":
+                # Try common system Hindi fonts
+                system_fonts = [
+                    "C:/Windows/Fonts/NotoSansDevanagari-Regular.ttf",
+                    "C:/Windows/Fonts/Devanagari.ttf",
+                    "/System/Library/Fonts/NotoSansDevanagari-Regular.ttf",
+                    "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
+                ]
+                for sys_font in system_fonts:
+                    if Path(sys_font).exists():
+                        return str(sys_font)
+            
+            # If no specific font found, use system default
+            return "Arial"  # FFmpeg will use system default
+        
+        return str(font_path)
+    
+    def _create_subtitle_file(self, text: str, font_path: str, font_size: int, 
+                             font_color: str, x: int, y: int) -> str:
+        """Create a temporary ASS subtitle file for Unicode text rendering"""
+        import tempfile
+        import os
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.ass', delete=False, encoding='utf-8')
+        
+        # Convert color to ASS format (white = &HFFFFFF&)
+        color_map = {
+            "white": "&HFFFFFF&",
+            "black": "&H000000&",
+            "red": "&H0000FF&",
+            "green": "&H00FF00&",
+            "blue": "&HFF0000&",
+            "yellow": "&H00FFFF&",
+            "cyan": "&HFFFF00&",
+            "magenta": "&HFF00FF&"
+        }
+        ass_color = color_map.get(font_color.lower(), "&HFFFFFF&")
+        
+        # Create ASS subtitle content
+        ass_content = f"""[Script Info]
+Title: Hindi Text Overlay
+ScriptType: v4.00+
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,{os.path.basename(font_path).replace('.ttf', '')},{font_size},{ass_color},&H000000&,&H000000&,&H000000&,0,0,0,0,100,100,0,0,1,2,0,2,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,99:59:59.99,Default,,0,0,0,,{{\\pos({x},{y})}}{text}
+"""
+        
+        temp_file.write(ass_content)
+        temp_file.close()
+        
+        return temp_file.name

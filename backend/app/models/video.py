@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Text, ForeignKey, DECIMAL, Boolean
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Text, ForeignKey, DECIMAL, Boolean, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -33,6 +33,32 @@ class Video(Base):
 
     def __repr__(self):
         return f"<Video(id={self.id}, filename={self.filename})>"
+
+
+class ProcessedVideo(Base):
+    __tablename__ = "processed_videos"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    original_video_id = Column(UUID(as_uuid=True), ForeignKey("videos.id"), nullable=False)
+    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size = Column(BigInteger, nullable=False)
+    duration = Column(DECIMAL(10, 3), nullable=False)
+    format = Column(String(50), nullable=False)
+    resolution = Column(String(20), nullable=False)
+    fps = Column(DECIMAL(5, 2))
+    bitrate = Column(Integer)
+    processing_type = Column(String(50), nullable=False)  # 'trim', 'overlay', 'watermark', 'quality'
+    parameters = Column(JSON)  # Store processing parameters
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    original_video = relationship("Video", foreign_keys=[original_video_id])
+    job = relationship("Job", foreign_keys=[job_id])
+
+    def __repr__(self):
+        return f"<ProcessedVideo(id={self.id}, type={self.processing_type})>"
 
 
 class VideoQuality(Base):
