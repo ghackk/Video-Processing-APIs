@@ -1,8 +1,8 @@
-# 🎬 How to Use Dripple Video Processing API
+#  How to Use Dripple Video Processing API
 
 This guide will walk you through using the Dripple Video Processing API from the very first time you set it up.
 
-## 🚀 Quick Start (First Time Setup)
+##  Quick Start (First Time Setup)
 
 ### Step 1: Start the Application
 
@@ -29,17 +29,17 @@ Open your browser and go to:
 
 You should see the interactive API documentation and a healthy status.
 
-## 📚 API Usage Guide
+##  API Usage Guide
 
-### 🔗 Base URL
+###  Base URL
 All API calls should be made to: `http://localhost:8000`
 
-### 📖 Interactive Documentation
+###  Interactive Documentation
 The easiest way to explore the API is through the interactive documentation:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-## 🎯 Level-by-Level Usage Guide
+##  Level-by-Level Usage Guide
 
 ### Level 1: Upload & Metadata
 
@@ -234,7 +234,7 @@ curl -X POST "http://localhost:8000/api/v1/videos/qualities" \
 curl -X GET "http://localhost:8000/api/v1/videos/{video_id}/download/720p" \
   -o video_720p.mp4
 ``
-## 🌐 Using the Interactive API Documentation
+##  Using the Interactive API Documentation
 
 ### Step 1: Open Swagger UI
 Go to http://localhost:8000/docs in your browser.
@@ -253,7 +253,7 @@ For file uploads:
 3. Click "Execute"
 4. Copy the response IDs for further operations
 
-## 🐍 Python Client Example
+##  Python Client Example
 
 Here's a Python script to interact with the API:
 
@@ -419,7 +419,7 @@ async function main() {
 main();
 ```
 
-## 🚨 Common Issues & Solutions
+##  Common Issues & Solutions
 
 ### Issue: "Connection refused"
 **Solution**: Make sure the application is running on http://localhost:8000
@@ -450,14 +450,14 @@ curl -X GET "http://localhost:8000/api/v1/jobs/?status=processing"
 curl -X GET "http://localhost:8000/api/v1/jobs/?job_type=trim"
 ```
 
-## 🎯 Next Steps
+##  Next Steps
 
 1. **Explore the API**: Use the interactive documentation at http://localhost:8000/docs
 2. **Try different features**: Test overlays, watermarks, and quality generation
 3. **Build your application**: Use the examples above to integrate with your app
 4. **Scale up**: Deploy to production using the deployment scripts
 
-## 📞 Need Help?
+##  Need Help?
 
 - **API Documentation**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
